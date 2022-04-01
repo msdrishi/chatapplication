@@ -1,22 +1,23 @@
 
 package chatting;
 import java.io.*;
-import java.lang.Thread.State;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.OnClose;
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+
+
 import java.sql.*;
 
 
-@ServerEndpoint(value = "/chat/{username}")
+@ServerEndpoint(value = "/chat/{username}/{port}")
 public class ChatServlet {
 
    public static Set<Session> userSessions = Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>());
@@ -26,67 +27,86 @@ public class ChatServlet {
     public static Set<String> names = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     @OnOpen
-    public void onOpen(Session curSession,@PathParam("username") String username) throws IOException
+    public void onOpen(Session curSession,@PathParam("username") String username,@PathParam("port") String port) throws IOException
     {
         curSession.getUserProperties().put("username", username);
+        curSession.getUserProperties().put("port", port);
         userSessions.add(curSession);
-        names.add(username);
         
-      
+        names.add(username);
+        System.out.println("session port:"+curSession.getRequestURI().getPort());
+        System.out.println("session port:"+curSession.getRequestURI().getHost());
+   
+        System.out.println("session id:"+curSession.getId());
        System.out.println("New user:"+username);
-       int n=Integer.valueOf(curSession.getId());
-       String name=username;
-       map.put(n,name);
        
-       for(Map.Entry<Integer,String> m : map.entrySet())
-       {    
-           System.out.println(m.getKey()+" "+m.getValue());    
-       }  
-       
+      
+     
        System.out.println("available users online");
 
 
      
 
-        Connection c = null;
-        Statement st= null;
+
+        Connection offlinecon = null;
+        Statement offst= null;
        
         try {
-           Class.forName("org.postgresql.Driver");
-           c = DriverManager
-              .getConnection("jdbc:postgresql://localhost:5432/"+username,
-              "postgres", "1234");
+           Class.forName("org.sqlite.JDBC");
+           
 
-            
-              c.setAutoCommit(false);
+           //checking if any offline messages 
 
-           System.out.println("Opened database successfully");
-   
+           offlinecon = DriverManager
+           .getConnection("jdbc:sqlite:/C:/sqlite/offline/"+username+".db");
+
          
-       
-           st = c.createStatement();
-           ResultSet rs = st.executeQuery( "SELECT table_name FROM information_schema.tables WHERE table_schema='public'  AND table_type='BASE TABLE';" );
-           while ( rs.next() ) {
-              String  chat = rs.getString("TABLE_NAME");
-              if(!(chat.equals("friends")))
-              {
-                curSession.getBasicRemote().sendText("friends: "+chat);
-                ResultSet r=st.executeQuery("select * from "+chat+";");
-                    while(r.next())
-                    {
-                        String  cstr = r.getString("chat");
-                        curSession.getBasicRemote().sendText(cstr);
-                    }
-                   
-              }
-             
-              System.out.println(chat);
-             
-           }
+         
+          // offlinecon.setAutoCommit(false);
 
-           rs.close();
-           st.close();
-           c.close();
+        System.out.println("offline Opened database successfully");
+
+      
+    
+        offst = offlinecon.createStatement();
+        System.out.println("retriving friends");
+        ResultSet rss = offst.executeQuery( "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name;");
+        while ( rss.next() ) {
+           String  chat = rss.getString("name");
+           System.out.println(chat);
+
+           if(!(chat.equals("friends")))
+           {
+             ResultSet r=null;
+             Statement nst=offlinecon.createStatement();
+
+             r=offst.executeQuery("select * from "+chat+";");
+                 while(r.next())
+                 {
+                     String  cstr = r.getString("chat");
+                     System.out.println("offline message:"+cstr);
+
+    
+                     curSession.getBasicRemote().sendText(cstr);
+                 }
+
+                 PreparedStatement pstmt = offlinecon.prepareStatement("delete from "+chat+" where not chat =' ';");
+                 pstmt.executeUpdate();
+
+                nst.close();
+                r.close();
+           }
+            
+           rss.close();
+          
+          
+        }
+
+      
+           offlinecon.close();
+           offst.close();
+       
+           System.out.println("online users");
            for(String str:names)
            {
               
@@ -108,9 +128,9 @@ public class ChatServlet {
         {
            if(!(str.equals(username)))
            {
-               curSession.getAsyncRemote().sendText(str+" joined");
+               curSession.getBasicRemote().sendText(str+" 34y34yrgws");
            }
-           System.out.println(str);
+         //  System.out.println(str);
         }
         
 
@@ -118,7 +138,7 @@ public class ChatServlet {
         {
             if(ses!=curSession)
             {
-                ses.getAsyncRemote().sendText(name+" joined");
+                ses.getAsyncRemote().sendText(username+" 34y34yrgws");
             }
             
         }
@@ -130,10 +150,9 @@ public class ChatServlet {
     public void onClose(Session curSession)
     {
         
-      
-        int n=Integer.valueOf(curSession.getId());
-        
-        String name=map.get(n);
+       String name=(String) curSession.getUserProperties().get("username");
+
+        names.remove(name);
 
         System.out.println("Session closed");
 
@@ -141,90 +160,167 @@ public class ChatServlet {
      
         for(Session ses :userSessions)
         {
-            ses.getAsyncRemote().sendText(name+" left");
+            ses.getAsyncRemote().sendText(name+" hfo8yr679r69");
         }
  
-        map.remove(n);
+        
     }
     
     @OnMessage
     public void onMessage(String message, Session userSession)
     {
-       
-        String msg[]=message.split(">>");
-        
-        String sender=msg[0];
-        String receiver=msg[2];
-        String chat=msg[0]+":"+msg[1];
 
-
-        for(Session ses : userSessions)
+        if(message.contains("diuye3ur02ydpcus"))
         {
-            
-            String sesname=(String)ses.getUserProperties().get("username");
 
-            if( sesname.equals(sender))
+               //incoming request
+               System.out.println("requesting");
+                String request[]=message.split("-");
+
+                String reqname=request[0];
+                String sender=request[2];
+
+                for(Session ses: userSessions)
+                {
+                    String sesname=(String)ses.getUserProperties().get("username");
+                    if(sesname.equals(reqname))
+                    {
+                        ses.getAsyncRemote().sendText("requestf2u3hyr9ydb "+sender);
+                    }
+                }
+
+        }
+        else if(message.contains("accepteoiqy3addf"))
+        {
+            String arr[]=message.split("-");
+            String friend=arr[0];
+            String friendport="";
+            for(Session ses:userSessions)
             {
-                ses.getAsyncRemote().sendText(chat);
-              
-
-
-                            
-                        Connection c = null;
-                        Connection con=null;
-                        Statement st=null;
-                        Statement stmt = null;
-                        try {
-                        Class.forName("org.postgresql.Driver");
-                        String user=sender;
-                        c = DriverManager
-                            .getConnection("jdbc:postgresql://localhost:5432/"+user,
-                            "postgres", "1234");
-                            con = DriverManager
-                            .getConnection("jdbc:postgresql://localhost:5432/"+receiver,
-                            "postgres", "1234");
-
-                        c.setAutoCommit(false);
-                        con.setAutoCommit(false);
-
-                        System.out.println("message going to insert");
+                String name=(String)ses.getUserProperties().get("username");
+                if(name.equals(friend))
+                {
+                    friendport=(String)ses.getUserProperties().get("port");
+                    break;
+                }
                 
-                        stmt = c.createStatement();
-                        String sql="";
-                        st=con.createStatement();
 
-                        sql = "INSERT INTO "+receiver+" values('"+chat+"');";
-                        
-                        stmt.executeUpdate(sql);
-
-                        sql = "INSERT INTO "+sender+" values('"+chat+"');";
-                        
-                        st.executeUpdate(sql);
-                        
-
-                        System.out.println("inserted successfully");
-
-                        stmt.close();
-                        c.commit();
-                        st.close();
-                        con.commit();
-                        con.close();
-                        c.close();
-                        } catch (Exception e) {
-                        System.err.println( e.getClass().getName()+": "+ e.getMessage() );
-                        
-                        }
-      
             }
-            if( sesname.equals(receiver))
+
+
+            String myname=(String)userSession.getUserProperties().get("username");
+            String port=(String)userSession.getUserProperties().get("port");
+
+            addfriend(myname,friend,port);
+            addfriend(friend, myname,friendport);
+
+            for(Session ses:userSessions)
             {
-                ses.getAsyncRemote().sendText(chat);
+                String name=(String)ses.getUserProperties().get("username");
+                if(name.equals(myname))
+                {
+                    ses.getAsyncRemote().sendText("alter23ifhped32-"+friend);
+                }
+                if(name.equals(friend))
+                {
+                    ses.getAsyncRemote().sendText("alter23ifhped32-"+myname);
+                }
             }
 
 
+        }
+        else{
+
+            String msg[]=message.split(">>");
+        
+            String sender=msg[0];
+            String receiver=msg[2];
+            String chat=msg[0]+":"+msg[1]+">>"+receiver;
+
+            String fport="";
+
+            for(Session ses:userSessions)
+            {
+                String sesname=(String)ses.getUserProperties().get("username");
+                if(sesname.equals(receiver))
+                {
+                     fport=(String)ses.getUserProperties().get("port");
+                }
+            }
+    
+            
+            
+           
+            if(fport.equals(""))
+            {
+
+                System.out.println("person offline");
+              
+                Connection connect=null;
+                Statement st=null;
+              
+                try {
+                    Class.forName("org.sqlite.JDBC");
+                  
+                    connect = DriverManager
+                    .getConnection("jdbc:sqlite:/C:/sqlite/offline/"+receiver+".db");
+
+                    Statement stt=null;
+                    stt=connect.createStatement();
+                    stt.executeUpdate("CREATE TABLE IF NOT EXISTS "+sender+" (chat text);");
+                    stt.close();
+                    
+                   
+                   
+            
+                
+
+                System.out.println("message going to insert");
+        
+           
+                String sql="";
+                st=connect.createStatement();
+
+           
+                sql = "INSERT INTO "+sender+" values('"+chat+"');";
+                System.out.println( "INSERT INTO "+sender+" values('"+chat+"');");
+                
+                st.executeUpdate(sql);
+                
+
+                System.out.println("inserted successfully");
+
+               
+                st.close();
+                connect.close();
+               
+                } 
+                catch (Exception e) {
+                System.err.println( e.getClass().getName()+": "+ e.getMessage() );
+                
+                }
+
+            }
 
 
-
+            for(Session ses : userSessions)
+            {
+                
+                String sesname=(String)ses.getUserProperties().get("username");
+    
+    
+                if( sesname.equals(sender))
+                {
+                    ses.getAsyncRemote().sendText(chat);
+                   
+                }
+                if( sesname.equals(receiver))
+                {
+                    ses.getAsyncRemote().sendText(chat);
+                }
+    
+    
+            }
 
              
       
@@ -233,11 +329,60 @@ public class ChatServlet {
          
     }
 
+
+    @OnError
+    public void error(Session session, Throwable t) {
+        System.out.println(t);
+    }
+
+
+    
     public Set<Session> getSession()
     {
         return userSessions;
     }
 
+    
+    public Set<String> getOnlineUser()
+    {
+        return names;
+    }
+
+
+    public void addfriend(String myname,String friend,String port)
+    {
+     
+
+        Connection off=null;
+        Statement offst=null;
+
+        System.out.println("myname:"+myname);
+        System.out.println("friend:"+friend);
+        try {
+
+           Class.forName("org.sqlite.JDBC");
+         
+            off = DriverManager
+           .getConnection("jdbc:sqlite:/C:/sqlite/offline/"+myname+".db");
+
+            offst=off.createStatement();
+            String str="create table "+friend+"(chat text);";
+            offst.executeUpdate(str);
+            System.out.println("new friend table created in offline also");
+
+          
+
+            off.close();
+            offst.close();
+           
+
+          
+           }
+           catch (Exception e) {
+                     e.printStackTrace();
+               }
+
+    }
   
 
     

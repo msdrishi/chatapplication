@@ -11,7 +11,22 @@
     <title>webapp</title>
 
     <style>
-    .searchbox
+    .signup
+    {
+        position:absolute;
+        top:50%;
+        left:50%;
+        text-align:center;
+        width:250px;
+        margin:auto;
+        height:auto;
+        background-color:#F8F9FB;
+        padding:10px;
+        border-radius:20px;
+        transform:translate(-50%,-50%);
+
+    }
+     .searchbox 
     {
         position:absolute;
         top:50%;
@@ -27,12 +42,12 @@
 
     }
     
-    .searchbox input{
+    .signup input,.searchbox input{
         width:70%;
         padding:2px 10px ;
         margin:5px 0;
     }
-    .searchbox input[type="submit"]{
+   .signup input[type="submit"], .searchbox input[type="submit"],#btn{
         background-color:#007AFF;
         border:none;
         border-radius:10px;
@@ -60,28 +75,101 @@ font-family: 'Poppins', sans-serif;
     }
     </style>
 
+
+    <script>
+
+        document.getElementById("signup").style.display="none";
+
+        function change()
+        {
+               var x = document.getElementById("signup");
+               var y = document.getElementById("login");
+                if (x.style.display === "none")
+                {
+                    x.style.display = "block";
+                    y.style.display="none";
+                } 
+                else 
+                {
+                    x.style.display = "none";
+                    y.style.display= "block";
+                }
+
+        }
+        
+
+        function validate()
+        {
+
+            var x=document.getElementById("Npword").value;
+            var y=document.getElementById("Cpword").value;
+
+            if(x===y)
+            {
+                document.getElementById("form").innerHTML="<input type='submit' onclick='validate()' id='submit'>";
+                 document.getElementById("submit").click();
+            }
+            else{
+                alert("password missmatch");
+            }
+
+        }
+
+    </script>
+
+
+
+
+
 </head>
 <body>
     
-    <div class="searchbox">
-    <% String invalid=(String)session.getAttribute("invalid");%>
+    <%
+        String signup = (String) session.getAttribute("signup");
+        if (signup!=null){     
+        out.print("<script>alert('Login created successfully');</script>");
+        }      
+        session.setAttribute("signup",null);
+    %>
+
+
+
+    <div class="signup" id="signup">
+        
+          <p>signup</p>
+          <form action="./signup" method="get" accept-charset="UTF-8" id="form">
+
+            <input type="text" name="username-signup" id="uname" autocomplete="off" placeholder="Username" >
+            <input type="password" name="password-signup" id="Npword" placeholder="Password">
+            <input type="password"    id="Cpword" placeholder="conform Password">
+
+            <br>
+            <input type='submit'  id='submit' value="submit">
+
+          </form>
+
+        
+         <button onclick="change()" id="btn">Login<button>
+
+    </div>
+
+
+    <div class="searchbox" id="login">
     
-      <% if(invalid!=null)
-      {%>
-         <p><%=invalid%></p>
-      <%}%>
 
-     <form action="./access" method="get" accept-charset="UTF-8">
-         <input type="text" name="username" id="uname" autocomplete="off" placeholder="Username">
+            <p>Login</p>
 
-         
-         <input type="password" name="password" id="pword" placeholder="Password">
-         <br>
-         <input type="submit" value="Login">
-     </form>
+            <form action="./access" method="get" accept-charset="UTF-8">
+                <input type="text" name="username" id="uname" autocomplete="off" placeholder="Username">
 
+                
+                <input type="password" name="password" id="pword" placeholder="Password">
+                <br>
+                <input type="submit" value="Login">
+            </form>
+            <p>create new account</p><button onclick="change()" id="btn">signup<button>
+    </div>
 
-   </div>
 
 </body>
 </html>

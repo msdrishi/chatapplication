@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 
@@ -14,6 +13,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 
 @WebServlet("/access")
 public class access extends  HttpServlet
@@ -29,18 +29,15 @@ public class access extends  HttpServlet
         Connection c = null;
         Statement st= null;
         boolean b=false;
-        Statement stu=null;
-        Connection con =null;
         try {
-           Class.forName("org.postgresql.Driver");
-           c = DriverManager
-              .getConnection("jdbc:postgresql://localhost:5432/Login",
-              "postgres", "1234");
 
-             con = DriverManager
-             .getConnection("jdbc:postgresql://localhost:5432/",
-             "postgres", "1234");
 
+         Class.forName("org.sqlite.JDBC");
+         c = DriverManager.getConnection("jdbc:sqlite:/C:/sqlite/login/login.db");
+         System.out.println("Opened database successfully");
+
+    
+       
             
               c.setAutoCommit(false);
 
@@ -69,37 +66,51 @@ public class access extends  HttpServlet
               }
              
              
-              System.out.println();
+              
            }
            
            if(b==true)
            {
-                  stu=con.createStatement();
-                  int i=0;
-                  try {
-                     PreparedStatement ps = con.prepareStatement("SELECT datname FROM pg_database WHERE datistemplate = false;");
-                     ResultSet rs2 = ps.executeQuery();
-                     while (rs2.next()) {
-                        System.out.println(rs2.getString(1));
-                        if(rs2.getString(1).equals(name))
+                 int i=0;
+                 
+               File folder = new File("C:/sqlite/tomcat 9090");
+               File[] listOfFiles = folder.listFiles();
+
+               for (File file : listOfFiles) {
+                  if (file.isFile()) {
+                     
+                     String str=(String)file.getName();
+
+                        String s[]=str.split("[.]");
+                        System.out.println(s[0]);
+                        if(name.equals(s[0]))
                         {
                            i=1;
                         }
-                     }
-                     rs2.close();
-                     ps.close();
-         
-               } catch (Exception e) {
-                     e.printStackTrace();
+                                       
+                  }
                }
 
                if(i==0)
                {
-                  String dbquery="CREATE DATABASE "+name+";";
-                  stu.executeUpdate(dbquery);
+                 
+
+                  Connection newcon = DriverManager
+                  .getConnection("jdbc:sqlite:/C:/sqlite/tomcat 9090/"+name+".db");
+
+                  Statement newstate=newcon.createStatement();
+                  
+                  String friendstable="create table friends(name text);";
+                  newstate.executeUpdate(friendstable);
+
+                  System.out.println("friends table created");
+
+                  newstate.close();
+                  newcon.close();
+
+
                }
-               stu.close();
-               con.close(); 
+             
  
            }
            

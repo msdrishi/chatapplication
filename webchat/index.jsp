@@ -23,7 +23,7 @@
 
         }
 
-        #msg ,#uname{
+        .msg ,#uname{
             margin:auto;
             width: 200px;
             padding:7px;
@@ -110,8 +110,13 @@
            width:300px;
            height:200px;
        }
-        #newusers{
-            width:200px;
+        .newusers{
+            width:400px;
+            padding:5px 10px;
+            margin:2px 0;
+        }
+        .onlineusers{
+            width:400px;
             padding:5px 10px;
             margin:2px 0;
         }
@@ -144,28 +149,37 @@
 
         }
 
+        .namelist input
+        {
+            width:200px;
+        }
+
 
 
         </style>
     </head>
+    <script type="text/javascript" src="jquery.js">
+</script>
 
-    
     <script type="text/javascript">
 
       <% String pathname=(String)session.getAttribute("username"); %>
      
-    var path="ws://localhost:9090/webchat/chat/"+"<%=pathname%>";
+    var path="ws://localhost:9090/webchat/chat/"+"<%=pathname%>/"+location.port;
 
     var ws = new WebSocket(path);
 
 
+    console.log(location.port);
+
+    
     function formatAMPM(date) 
     {
         var hours = date.getHours();
         var minutes = date.getMinutes();
         var ampm = hours >= 12 ? 'pm' : 'am';
         hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
+        hours = hours ? hours : 12; 
         minutes = minutes < 10 ? '0'+minutes : minutes;
         var strTime = hours + ':' + minutes + ' ' + ampm;
         return strTime;
@@ -185,69 +199,109 @@
        
        var message=event.data;
        
-       if(message.includes("friends:"))
+       if(message.includes("srtksr6724t:"))
        {
             var Firstname = message.split(" ");
-            var namelist = document.getElementById("namelist");
-            var element = document.createElement("input");
-            console.log(Firstname[1]);
-            element.type = "button";
-            element.value = Firstname[1]; 
-            element.name = "button"; 
-            element.id= "newusers";
-            element.class="newusers";
-            element.onclick=function () 
-            {
-                  var x = document.getElementById(Firstname[1]);
-                    if (x.style.display === "none") {
-                        x.style.display = "block";
-                    } else {
-                        x.style.display = "none";
-                    }
-            };
-
-            var foo = document.getElementById("fri");
-            foo.appendChild(element);
-
-
-             var box = document.createElement("div");
-            console.log(Firstname[1]);
-        
-            box.id=Firstname[1];
-            box.class="box";
             
+           addfriend(Firstname[1]);
 
 
 
        }
+       else if(message.includes("hfo8yr679r69"))
+       {
+           var closeuser=message.split(" ");
+
+           var leftuser=closeuser[0];
+
+
+            offlineuser(leftuser);
+
+       }
+       else if(message.includes("requestf2u3hyr9ydb"))
+       {
+            var Firstname = message.split(" ");
+            var element = document.createElement("input");
+            element.type = "button";
+            element.value = Firstname[1]; 
+            element.id = Firstname[1]+"-request";
+            element.className="newusers";
+            element.onclick=function() 
+            {
+                  accept_request(Firstname[1]);
+                  hidebutton(Firstname[1]);
+            };
+
+
+          
+            var req2 = document.getElementById("req");
+            req2.appendChild(element);
+
+
+       }
+       else if(message.includes("alter23ifhped32"))
+       {
+           var msg=message.split("-");
+           var me=document.getElementById('myname').innerText;
+
+           addfriend(msg[1]);
+           addtable(msg[1]);
+           addfrienddatabase(msg[1],me);
+
+           
+
+       }
        else 
        {
-           if(message.includes("joined"))
+           if(message.includes("34y34yrgws"))
             {
                     loadname(message);
             }
             else{
-                  var mySpan = document.getElementById("chat");
-            
+                  
                     var me=document.getElementById('myname').innerText;
                     console.log(me );
                     console.log(message );
 
-                    var chatname=message.split(":");
-                    var compare=chatname[0];
+                    var chatname=message.split(">>");
+                    var mymsg=chatname[0];
+                    var myname=mymsg.split(":");
+                    var namecheck=myname[0];
+                    var friendname=chatname[1];
 
-                   if(!(compare===me))
+                    if(friendname===me)
+                    {
+                        friendname=namecheck;
+                    }
+                    var chatid= me+"-"+friendname;
+                    console.log(chatid);
+                    var mySpan = document.getElementById(chatid);
+
+                    document.getElementById("getmsg").value=mymsg;
+
+                   
+                  
+                     
+
+                  
+                      
+
+            
+                   if(!(namecheck===me))
                    {
-                        mySpan.innerHTML+="<p id='text' >"+message+"</p>";
+                        mySpan.innerHTML+="<p id='text' >"+mymsg+"</p>";
+                         
                        
                         notification();
                    }
                    else
                    {
-                        mySpan.innerHTML+="<p id='mytext' >"+message+"</p>";
+                        mySpan.innerHTML+="<p id='mytext' >"+mymsg+"</p>";
                       
                       
                    }
+
+                     calljava(message,me,friendname);
                  
 
             }
@@ -262,15 +316,169 @@
     {
         
     };
- 
+     function get(msg)
+     {
+        
+        window.location.replace("index.jsp?mess="+msg);
+     }
+
+  function  addfrienddatabase(name,owner)
+  {
+       $.ajax({
+            type:'GET',
+            data:{name:name,owner:owner},
+            url:'Ajaxservlet',
+            success: function(result)
+            {
+
+            }
+        });
+  }
     function loadname(name)
     {
         var Firstname = name.split(" ");
-        var namelist = document.getElementById("namelist");
-        // namelist.innerHTML += Firstname[0] +"<br/>";
         add(Firstname[0]);
     }
+
+    function offlineuser(name)
+    {
+        var elem = document.getElementById(name+"-online");
+        elem.parentNode.removeChild(elem);
+    }
+    function hidebutton(name)
+    {
+        var elem = document.getElementById(name+"-request");
+        elem.parentNode.removeChild(elem);
+    }
+    function addfriend(name)
+    {
+        
+ 
+            var element = document.createElement("input");
+            console.log(name);
+            element.type = "button";
+            element.value = name; 
+            element.name = "button"; 
+            element.id = name;
+            element.className="newusers";
+            element.onclick=function () 
+            {
+                  var x = document.getElementById(name+"-box");
+                    if (x.style.display == "none") {
+                        x.style.display = "block";
+                    } else {
+                        x.style.display = "none";
+                    }
+            };
+
+            var foo = document.getElementById("fri");
+            foo.appendChild(element);
+
+
+             var box = document.createElement("div");
+            console.log(name);
+        
+            box.id=name;
+            box.class="box";
+            
+    }
+
+
+    function addtable(name)
+    {
+        
+   var me=document.getElementById('myname').innerText;
+   console.log(me);
+
+    var x = document.createElement("DIV");
+    x.id=name+"-box";
+    x.className="box";
+
+    var namebox=document.createElement("DIV");
+    namebox.className="name-box";
+
+    var chatname=document.createElement("h3");
+    const node = document.createTextNode(name);
+    chatname.appendChild(node);
+
+    namebox.appendChild(chatname);
+     
+    x.appendChild(namebox);
+
+    var chatmsg=document.createElement("div");
+
+    chatmsg.id=me+"-"+name;
+    chatmsg.className="chat";
     
+    x.appendChild(chatmsg);
+
+    var msgbox=document.createElement("input");
+
+    msgbox.id="msg-"+name;
+    msgbox.className="msg";
+    msgbox.placeholder="Enter the message";
+
+    x.appendChild(msgbox);
+
+
+    var btn=document.createElement("button");
+    btn.onclick=function ()
+    {
+        return sendMsg(name);
+
+    }
+
+    btn.innerHTML="send";
+
+    
+    x.appendChild(btn);
+
+
+    document.body.appendChild(x);
+
+
+
+
+    }
+
+
+    function filldata(message)
+    {
+               var me=document.getElementById('myname').innerText;
+                    console.log(me );
+                    console.log(message );
+
+                    var chatname=message.split(">>");
+                    var mymsg=chatname[0];
+                    var myname=mymsg.split(":");
+                    var namecheck=myname[0];
+                    var friendname=chatname[1];
+
+                    if(friendname===me)
+                    {
+                        friendname=namecheck;
+                    }
+                    var chatid= me+"-"+friendname;
+                    console.log(chatid);
+                    var mySpan = document.getElementById(chatid);
+
+                     
+                   if(!(namecheck===me))
+                   {
+                        mySpan.innerHTML+="<p id='text' >"+mymsg+"</p>";
+                         
+                       
+                        notification();
+                   }
+                   else
+                   {
+                        mySpan.innerHTML+="<p id='mytext' >"+mymsg+"</p>";
+                      
+                      
+                   }
+    }
+
+
     function notification() {
 				
 				var mp3 = '<source src="msg.mp3" type="audio/mpeg">';
@@ -280,18 +488,31 @@
 
 
     function sendMsg(name) {
-        var msg = document.getElementById("msg").value;
+
+        console.log("sending msg");
+
+        var id="msg-"+name;
+        var msg = document.getElementById(id).value;
         if(msg)
         {
              <% String name=(String)session.getAttribute("username"); %>
              msg="<%=name%>"+">>"+msg+"("+curtime+")>>"+name;
             ws.send(msg);
         }
-        document.getElementById("msg").value="";
+        document.getElementByClass("msg").value="";
     }
-
+   
+   function accept_request(name)
+   {
+       ws.send(name+"-accepteoiqy3addf");
+   }
     
-
+  function request(name)
+  {
+      <% String rname=(String)session.getAttribute("username"); %>
+      var req=name+"-diuye3ur02ydpcus-"+"<%=rname%>";
+      ws.send(req);
+  }
 
 
 
@@ -303,8 +524,13 @@ function add(name)
     element.type = "button";
     element.value = name; 
     element.name = "button"; 
-    element.id= "newusers";
-    element.class="newusers";
+    element.id = name+"-online";
+    element.className="onlineusers";
+    element.title="add user"
+    element.onclick=function () 
+            {
+                  request(name);
+            };
 
 
     var foo = document.getElementById("fooBar");
@@ -325,14 +551,40 @@ function change()
   }
 }
 
+function calljava(message,owner,friend)
+{
+       $.ajax({
+            type:'POST',
+            data:{message:message ,owner:owner, friend:friend},
+            url:'Ajaxservlet',
+            success: function(result)
+            {
 
+            }
+        });
 
+}
+
+function hidebox(name)
+{
+ var x = document.getElementById( name +"-box");
+                    if (x.style.display == "none")
+                    {
+                        x.style.display = "block";
+                    } 
+                    else {
+                        x.style.display = "none";
+                    }
+}
 
 </script>
 
 
-    <body>
 
+    <body>
+ 
+  
+    <input type="hidden" value="do" id="getmsg" name="getmsg"/>
 
     <div class="user-online">   
         <% String s=(String)session.getAttribute("username"); %>
@@ -348,36 +600,91 @@ function change()
      
      
      <div class="namelist" id="namelist">
-            <input type="button" id="newusers" value="group" onclick="change()">
+           
             <p>Users online</p>
             <p id="fooBar"></p><br>
             <p>Friends</p>
+
+            <% 
+            
+        Connection cn = null;
+         Statement stt= null;
+        String usernamee=(String)session.getAttribute("username");
+        try {
+           Class.forName("org.sqlite.JDBC");
+           cn = DriverManager
+              .getConnection("jdbc:sqlite:/C:/sqlite/tomcat 9090/"+usernamee+".db");
+
+              
+              cn.setAutoCommit(false);
+
+        
+       
+           stt = cn.createStatement();
+
+           ResultSet rs = cn.getMetaData().getTables(null, null, null, null);
+            while (rs.next()) {
+                System.out.println(rs.getString("TABLE_NAME"));
+                String chat=rs.getString("TABLE_NAME");
+                
+                if(!(chat.equals("friends")))
+                {
+
+                
+                %> <input type="button" value=<%=chat%> id=<%=chat%> class="newusers" name="button" onclick= hidebox('<%=chat%>') />
+           
+        <% }
+        }
+
+        stt.close();
+        cn.close();
+
+        }
+        catch(Exception e)
+        {
+            System.out.println(e);
+        }
+
+
+
+
+
+
+             %>
+
             <p id="fri"></p><br>
+            <p>Request</p>
+            <p id="req"></p><br>
+
+
      </div>
 
-    <div class="private-chat">
-        <form action="./access" target="_blank" method="post" accept-charset="UTF-8">
-         <input type="text" name="friend" id="uname" autocomplete="off" placeholder="Username">
-         <input type="hidden" name="Myname" id="myname" value="<%=s%>">
-         <br>
-         <input type="submit" value="Connect">
-     </form>
-    </div>
+
 
   </div>
   <div id="sound"></div>
+   
+  <form action="./request" method=get id="request">
+     
+  </form>
+
+
+
 
 <%
 
 
-      Connection c = null;
+        Connection c = null;
+        Connection con=null;
         Statement st= null;
         String username=(String)session.getAttribute("username");
         try {
-           Class.forName("org.postgresql.Driver");
+           Class.forName("org.sqlite.JDBC");
            c = DriverManager
-              .getConnection("jdbc:postgresql://localhost:5432/"+username,
-              "postgres", "1234");
+              .getConnection("jdbc:sqlite:/C:/sqlite/tomcat 9090/"+username+".db");
+
+               con = DriverManager
+              .getConnection("jdbc:sqlite:/C:/sqlite/tomcat 9090/"+username+".db");
 
             
               c.setAutoCommit(false);
@@ -385,32 +692,78 @@ function change()
         
        
            st = c.createStatement();
-           ResultSet rs = st.executeQuery( "SELECT table_name FROM information_schema.tables WHERE table_schema='public'  AND table_type='BASE TABLE';" );
-           while ( rs.next() ) {
-              String  chat = rs.getString("TABLE_NAME");
-              if(!(chat.equals("friends")))
+
+           ResultSet rs = c.getMetaData().getTables(null, null, null, null);
+            while (rs.next()) {
+                System.out.println(rs.getString("TABLE_NAME"));
+                String chat=rs.getString("TABLE_NAME");
+                String chatid = chat+"-box";
+                String chatmsg = username+"-"+chat;
+                String msgid="msg-"+chat;
+
+              if(!(chatid.equals("friends-box")))
               {
                   
              %>
 
-            <div class="box" id=<%=chat%>>
+            <div class="box" id="<%=chatid%>">
 
-            <div class="message box" id="message-box">
+    
                     <div class="name-box">
                         <h3><%=chat%></h3>
                     </div>
 
-                    <div id="chat" class="chat"></div>
+                    <div id="<%=chatmsg%>" class="chat">
+
+                    <%
+                     ResultSet r=null;
+                Statement nst=con.createStatement();
+
+                r=nst.executeQuery("select * from "+chat+";");
+                    while(r.next())
+                    {
+                        String  cstr = r.getString(1);
+
+                        String arr[]=cstr.split(">>");
+
+                        String omsg=arr[0];
+                        String friend_name=arr[1];
+
+                        if(username.equals(friend_name))
+                        {%> <p id='text' ><%=omsg%></p>
+
+                        <% 
+                        }
+                        else
+                        {
+                        %>  <p id='mytext' ><%=omsg%></p>
+
+                       <% }
+                      
+                        
+                   }
+                    r.close();
+                   nst.close();
+     %>
+                    
+                    </div>
+
                     <div>
-                    <input type="text" name="msg" id="msg" placeholder="Enter message here"/>
+
+
+                    <input type="text" name="msg" class="msg" id='<%=msgid%>' placeholder="Enter message here"/>
                         <button onclick="return sendMsg('<%=chat%>');">Enter</button>
                     
                     </div>
-                </div>
+         
 
             </div>
 
-              <%}
+              <% }
+
+
+
+              
              
           
              
@@ -419,6 +772,7 @@ function change()
            rs.close();
            st.close();
            c.close();
+           con.close();
       
            
         }
@@ -431,25 +785,6 @@ function change()
 
 
 %>
-<%-- <div class="box" id="friend">
-
-   <div class="message box" id="message-box">
-         <div class="name-box">
-            <h3>Naveen</h3>
-        </div>
-
-        <div id="chat" class="chat"></div>
-        <div>
-        <input type="text" name="msg" id="msg" placeholder="Enter message here"/>
-            <button onclick="return sendMsg();">Enter</button>
-        
-        </div>
-    </div>
-
-</div> --%>
-
-
-
 
  
     </body>
